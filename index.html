@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Baby Tracker</title>
+<style>
+  :root {
+    --cream: #FBF7F0;
+    --ink: #2E2A26;
+    --clay: #C97A5A;
+    --clay-deep: #A8593D;
+    --sage: #8A9A7E;
+    --line: #E6DFD3;
+    --card: #FFFFFF;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--cream);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    padding: 20px 16px 60px;
+  }
+  .wrap { max-width: 420px; margin: 0 auto; }
+  h1 {
+    font-size: 22px;
+    font-weight: 700;
+    margin: 4px 0 2px;
+    letter-spacing: -0.01em;
+  }
+  .sub {
+    font-size: 14px;
+    color: #7A7368;
+    margin: 0 0 20px;
+  }
+  form {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+  }
+  label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #5A544B;
+    display: block;
+    margin-bottom: 6px;
+  }
+  input[type="datetime-local"],
+  input[type="number"],
+  select {
+    width: 100%;
+    padding: 11px 12px;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    font-size: 16px;
+    background: var(--cream);
+    color: var(--ink);
+  }
+  input:focus, select:focus {
+    outline: none;
+    border-color: var(--clay);
+  }
+  .unit-row {
+    display: flex;
+    gap: 8px;
+  }
+  .unit-row input { flex: 1; }
+  .unit-btns, .sub-btns {
+    display: flex;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .unit-btn, .sub-btn {
+    padding: 0 14px;
+    background: var(--cream);
+    border: none;
+    font-size: 14px;
+    font-weight: 600;
+    color: #8A8378;
+    cursor: pointer;
+  }
+  .unit-btn.active, .sub-btn.active {
+    background: var(--clay);
+    color: white;
+  }
+  button.submit {
+    margin-top: 4px;
+    background: var(--clay-deep);
+    color: white;
+    border: none;
+    border-radius: 9px;
+    padding: 13px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  button.submit:active { background: var(--clay); }
+
+  .log-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin: 28px 0 10px;
+  }
+  .log-header h2 {
+    font-size: 16px;
+    margin: 0;
+  }
+  .log-header span {
+    font-size: 13px;
+    color: #9A9284;
+  }
+  .entry {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .entry .time {
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .entry .date {
+    font-size: 12px;
+    color: #9A9284;
+    margin-top: 1px;
+  }
+  .entry .vol {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--clay-deep);
+  }
+  .entry .del {
+    background: none;
+    border: none;
+    color: #C7BFB2;
+    font-size: 18px;
+    padding: 0 0 0 12px;
+    cursor: pointer;
+    line-height: 1;
+  }
+  .method-btns, .type-btns {
+    display: flex;
+    gap: 6px;
+  }
+  .method-btn, .type-btn {
+    flex: 1;
+    padding: 10px 4px;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    background: var(--cream);
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #8A8378;
+    cursor: pointer;
+    text-align: center;
+  }
+  .type-btn.active {
+    background: var(--clay-deep);
+    border-color: var(--clay-deep);
+    color: white;
+  }
+  .method-btn.active {
+    background: var(--sage);
+    border-color: var(--sage);
+    color: white;
+  }
+  .entry .method {
+    font-size: 12px;
+    color: #9A9284;
+    margin-top: 1px;
+  }
+  .empty {
+    text-align: center;
+    color: #9A9284;
+    font-size: 14px;
+    padding: 30px 10px;
+  }
+  .status {
+    text-align: center;
+    font-size: 13px;
+    color: var(--sage);
+    height: 18px;
+    margin-top: 8px;
+  }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Baby Tracker</h1>
+  <p class="sub">Log feedings and diaper changes</p>
+
+  <form id="feedForm">
+    <div>
+      <label>What are you logging?</label>
+      <div class="type-btns" id="typeBtns">
+        <button type="button" class="type-btn active" data-type="Milk Feeding">Milk Feeding</button>
+        <button type="button" class="type-btn" data-type="Poop">Poop</button>
+        <button type="button" class="type-btn" data-type="Pee">Pee</button>
+      </div>
+    </div>
+
+    <div>
+      <label for="feedTime">Time</label>
+      <input type="datetime-local" id="feedTime" required>
+    </div>
+
+    <!-- FEEDING FIELDS -->
+    <div id="feedingFields">
+      <div>
+        <label for="volume">Volume</label>
+        <div class="unit-row">
+          <input type="number" id="volume" placeholder="e.g. 120" min="0" step="0.5">
+          <div class="unit-btns">
+            <button type="button" class="unit-btn" data-unit="oz">oz</button>
+            <button type="button" class="unit-btn active" data-unit="ml">ml</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top: 14px;">
+        <label for="method">Feeding method</label>
+        <div class="method-btns" id="methodBtns">
+          <button type="button" class="method-btn active" data-method="Breast">Breast</button>
+          <button type="button" class="method-btn" data-method="Bottle - Milk">Bottle (milk)</button>
+          <button type="button" class="method-btn" data-method="Bottle - Formula">Bottle (formula)</button>
+        </div>
+      </div>
+
+      <div id="sideContainer" style="margin-top: 14px;">
+        <label>Side</label>
+        <div class="sub-btns" id="sideBtns">
+          <button type="button" class="sub-btn active" data-side="Left">Left</button>
+          <button type="button" class="sub-btn" data-side="Right">Right</button>
+          <button type="button" class="sub-btn" data-side="Both">Both</button>
+        </div>
+      </div>
+
+      <div style="margin-top: 14px;">
+        <label for="duration">Time spent feeding (minutes)</label>
+        <input type="number" id="duration" placeholder="e.g. 20 (optional)" min="0" step="1">
+      </div>
+    </div>
+
+    <!-- POOP FIELDS -->
+    <div id="poopFields" class="hidden">
+      <div>
+        <label for="poopDetails">Poop Consistency</label>
+        <select id="poopDetails">
+          <option value="Normal">Normal</option>
+          <option value="Runny">Runny</option>
+          <option value="Hard">Hard</option>
+          <option value="Sticky">Sticky</option>
+        </select>
+      </div>
+      <div style="margin-top: 14px;">
+        <label for="poopColor">Poop Color</label>
+        <select id="poopColor">
+          <option value="Dark Green">Dark Green</option>
+          <option value="Light Yellow">Light Yellow</option>
+          <option value="Brown">Brown</option>
+          <option value="Dark Brown">Dark Brown</option>
+          <option value="Black">Black</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- PEE FIELDS -->
+    <div id="peeFields" class="hidden">
+      <div style="font-size: 14px; color: #5A544B; padding: 4px 0;">
+        💧 Wet diaper logged
+      </div>
+    </div>
+
+    <button type="submit" class="submit">Save log</button>
+    <div class="status" id="status"></div>
+  </form>
+
+  <div class="log-header">
+    <h2>Recent logs</h2>
+    <span id="countLabel"></span>
+  </div>
+  <div id="log"></div>
+</div>
+
+<script>
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyRUWvpVZOZppMdza_JDahvGI6swgo0nv-ilVPvmKOWVE-bwu7qc267Juq86Sn9xqI/exec';
+
+let logType = 'Milk Feeding';
+let unit = 'ml';
+let method = 'Breast';
+let side = 'Left';
+let entries = [];
+
+const feedTimeInput = document.getElementById('feedTime');
+const volumeInput = document.getElementById('volume');
+const durationInput = document.getElementById('duration');
+const poopDetailsInput = document.getElementById('poopDetails');
+const poopColorInput = document.getElementById('poopColor');
+const form = document.getElementById('feedForm');
+const logEl = document.getElementById('log');
+const statusEl = document.getElementById('status');
+const countLabel = document.getElementById('countLabel');
+
+const feedingFields = document.getElementById('feedingFields');
+const poopFields = document.getElementById('poopFields');
+const peeFields = document.getElementById('peeFields');
+const sideContainer = document.getElementById('sideContainer');
+
+function setDefaultTime() {
+  const now = new Date();
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+  feedTimeInput.value = now.toISOString().slice(0,16);
+}
+setDefaultTime();
+
+function setupButtonGroup(containerId, callback) {
+  document.getElementById(containerId).addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    document.querySelectorAll(`#${containerId} button`).forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    callback(btn);
+  });
+}
+
+setupButtonGroup('typeBtns', (btn) => {
+  logType = btn.dataset.type;
+  feedingFields.classList.toggle('hidden', logType !== 'Milk Feeding');
+  poopFields.classList.toggle('hidden', logType !== 'Poop');
+  peeFields.classList.toggle('hidden', logType !== 'Pee');
+});
+
+document.querySelectorAll('.unit-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.unit-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    unit = btn.dataset.unit;
+  });
+});
+
+setupButtonGroup('methodBtns', (btn) => {
+  method = btn.dataset.method;
+  sideContainer.classList.toggle('hidden', method !== 'Breast');
+});
+
+setupButtonGroup('sideBtns', (btn) => {
+  side = btn.dataset.side;
+});
+
+function formatEntryTime(iso) {
+  const d = new Date(iso);
+  return {
+    time: d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }),
+    date: d.toLocaleDateString([], { month: 'short', day: 'numeric' })
+  };
+}
+
+function render() {
+  if (!entries.length) {
+    logEl.innerHTML = '<div class="empty">No logs recorded yet</div>';
+    countLabel.textContent = '';
+    return;
+  }
+  countLabel.textContent = entries.length + ' logged';
+  const sorted = [...entries].sort((a,b) => new Date(b.time) - new Date(a.time));
+  
+  logEl.innerHTML = sorted.map(e => {
+    const { time, date } = formatEntryTime(e.time);
+    let detailsHtml = '';
+    let mainDisplay = '';
+
+    if (e.logType === 'Milk Feeding') {
+      mainDisplay = `${e.volume} ${e.unit}`;
+      detailsHtml = `<div class="method">${e.method} ${e.method === 'Breast' ? '('+e.side+')' : ''}</div>
+                     ${e.duration ? `<div class="date">${e.duration} min feeding</div>` : ''}`;
+    } else if (e.logType === 'Poop') {
+      mainDisplay = '💩 Poop';
+      detailsHtml = `<div class="method">Consistency: ${e.poopDetails} | Color: ${e.poopColor}</div>`;
+    } else if (e.logType === 'Pee') {
+      mainDisplay = '💧 Pee';
+      detailsHtml = `<div class="method">Wet Diaper</div>`;
+    }
+
+    return `<div class="entry" data-id="${e.id}">
+      <div>
+        <div class="time">${time}</div>
+        <div class="date">${date}</div>
+        <div style="font-size:12px; font-weight:600; color:var(--clay); margin-top:1px;">${e.logType}</div>
+        ${detailsHtml}
+      </div>
+      <div style="display:flex; align-items:center;">
+        <div class="vol">${mainDisplay}</div>
+        <button class="del" data-id="${e.id}">&times;</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+logEl.addEventListener('click', async (e) => {
+  if (!e.target.classList.contains('del')) return;
+  const id = e.target.dataset.id;
+  entries = entries.filter(item => item.id !== id);
+  await saveEntries();
+  render();
+});
+
+async function loadEntries() {
+  try {
+    statusEl.textContent = 'Syncing from sheet...';
+    const response = await fetch(GOOGLE_SCRIPT_URL);
+    const sheetData = await response.json();
+    
+    if (Array.isArray(sheetData) && sheetData.length > 0) {
+      entries = sheetData;
+    } else {
+      const result = await window.storage.get('feeding-entries', false);
+      entries = result ? JSON.parse(result.value) : [];
+    }
+  } catch (e) {
+    try {
+      const result = await window.storage.get('feeding-entries', false);
+      entries = result ? JSON.parse(result.value) : [];
+    } catch (err) {
+      entries = [];
+    }
+  }
+  statusEl.textContent = '';
+  render();
+}
+
+async function saveEntries() {
+  try {
+    await window.storage.set('feeding-entries', JSON.stringify(entries), false);
+  } catch (e) {
+    statusEl.textContent = 'Could not save locally — try again';
+  }
+}
+
+async function syncToGoogleSheets(entry) {
+  if (!GOOGLE_SCRIPT_URL) return;
+  try {
+    await fetch(GOOGLE_SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(entry)
+    });
+  } catch (e) {
+    console.error('Failed to sync to Google Sheets', e);
+  }
+}
+
+form.addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  
+  const entry = {
+    id: 'entry-' + Date.now(),
+    logType: logType,
+    time: feedTimeInput.value,
+    volume: logType === 'Milk Feeding' ? volumeInput.value : '',
+    unit: logType === 'Milk Feeding' ? unit : '',
+    method: logType === 'Milk Feeding' ? method : '',
+    side: (logType === 'Milk Feeding' && method === 'Breast') ? side : '',
+    duration: logType === 'Milk Feeding' ? durationInput.value : '',
+    poopDetails: logType === 'Poop' ? poopDetailsInput.value : '',
+    poopColor: logType === 'Poop' ? poopColorInput.value : ''
+  };
+
+  entries.push(entry);
+  statusEl.textContent = 'Saving...';
+  
+  await Promise.all([
+    saveEntries(),
+    syncToGoogleSheets(entry)
+  ]);
+
+  statusEl.textContent = 'Saved & Synced';
+  setTimeout(() => statusEl.textContent = '', 1200);
+  
+  if (logType === 'Milk Feeding') {
+    volumeInput.value = '';
+    durationInput.value = '';
+  }
+  setDefaultTime();
+  render();
+});
+
+loadEntries();
+</script>
+</body>
+</html>
