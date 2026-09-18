@@ -2,7 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Baby Tracker">
+<meta name="theme-color" content="#FBF7F0">
 <title>Baby Tracker</title>
 <style>
   :root {
@@ -34,6 +38,32 @@
     color: #7A7368;
     margin: 0 0 20px;
   }
+  .tabs {
+    display: flex;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 11px;
+    padding: 4px;
+    gap: 4px;
+    margin-bottom: 18px;
+  }
+  .tab-btn {
+    flex: 1;
+    padding: 9px 4px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    font-size: 14px;
+    font-weight: 700;
+    color: #8A8378;
+    cursor: pointer;
+  }
+  .tab-btn.active {
+    background: var(--clay-deep);
+    color: white;
+  }
+  .view { display: none; }
+  .view.active { display: block; }
   form {
     background: var(--card);
     border: 1px solid var(--line);
@@ -91,8 +121,13 @@
     background: var(--clay);
     color: white;
   }
-  button.submit {
+  .form-actions {
+    display: flex;
+    gap: 8px;
     margin-top: 4px;
+  }
+  button.submit {
+    flex: 1;
     background: var(--clay-deep);
     color: white;
     border: none;
@@ -103,6 +138,27 @@
     cursor: pointer;
   }
   button.submit:active { background: var(--clay); }
+  button.cancel-edit {
+    display: none;
+    background: var(--cream);
+    color: #8A8378;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    padding: 13px 16px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .editing-banner {
+    display: none;
+    background: #F3E9DE;
+    color: var(--clay-deep);
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 9px;
+    padding: 8px 12px;
+    text-align: center;
+  }
 
   .log-header {
     display: flex;
@@ -142,15 +198,22 @@
     font-weight: 700;
     color: var(--clay-deep);
   }
+  .entry .actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .entry .edit,
   .entry .del {
     background: none;
     border: none;
     color: #C7BFB2;
-    font-size: 18px;
-    padding: 0 0 0 12px;
+    font-size: 16px;
+    padding: 4px 6px;
     cursor: pointer;
     line-height: 1;
   }
+  .entry .del { font-size: 18px; }
   .method-btns, .type-btns {
     display: flex;
     gap: 6px;
@@ -196,6 +259,61 @@
     margin-top: 8px;
   }
   .hidden { display: none !important; }
+
+  /* Summary view */
+  .day-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  .day-card.today {
+    border-color: var(--clay);
+    box-shadow: 0 0 0 1px var(--clay);
+  }
+  .day-card .day-title {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .day-card .day-title h3 {
+    margin: 0;
+    font-size: 15px;
+  }
+  .day-card .day-title .today-tag {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--clay-deep);
+    background: #F3E9DE;
+    padding: 2px 8px;
+    border-radius: 20px;
+  }
+  .stat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .stat-tile {
+    background: var(--cream);
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+  .stat-tile .stat-value {
+    font-size: 19px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .stat-tile .stat-label {
+    font-size: 11.5px;
+    color: #9A9284;
+    font-weight: 600;
+    margin-top: 2px;
+  }
+  .stat-tile.feeds .stat-value { color: var(--clay-deep); }
+  .stat-tile.poop .stat-value { color: #8A6D46; }
+  .stat-tile.pee .stat-value { color: #5B8FA8; }
 </style>
 </head>
 <body>
@@ -203,107 +321,129 @@
   <h1>Baby Tracker</h1>
   <p class="sub">Log feedings and diaper changes</p>
 
-  <form id="feedForm">
-    <div>
-      <label>What are you logging?</label>
-      <div class="type-btns" id="typeBtns">
-        <button type="button" class="type-btn active" data-type="Milk Feeding">Milk Feeding</button>
-        <button type="button" class="type-btn" data-type="Poop">Poop</button>
-        <button type="button" class="type-btn" data-type="Pee">Pee</button>
-      </div>
-    </div>
+  <div class="tabs" id="tabs">
+    <button type="button" class="tab-btn active" data-view="logView">Log</button>
+    <button type="button" class="tab-btn" data-view="summaryView">Summary</button>
+  </div>
 
-    <div>
-      <label for="feedTime">Time</label>
-      <input type="datetime-local" id="feedTime" required>
-    </div>
+  <div id="logView" class="view active">
+    <form id="feedForm">
+      <div class="editing-banner" id="editingBanner">Editing an existing log</div>
 
-    <!-- FEEDING FIELDS -->
-    <div id="feedingFields">
       <div>
-        <label for="volume">Volume</label>
-        <div class="unit-row">
-          <input type="number" id="volume" placeholder="e.g. 120" min="0" step="0.5">
-          <div class="unit-btns">
-            <button type="button" class="unit-btn" data-unit="oz">oz</button>
-            <button type="button" class="unit-btn active" data-unit="ml">ml</button>
+        <label>What are you logging?</label>
+        <div class="type-btns" id="typeBtns">
+          <button type="button" class="type-btn active" data-type="Milk Feeding">Milk Feeding</button>
+          <button type="button" class="type-btn" data-type="Poop">Poop</button>
+          <button type="button" class="type-btn" data-type="Pee">Pee</button>
+        </div>
+      </div>
+
+      <div>
+        <label for="feedTime">Time</label>
+        <input type="datetime-local" id="feedTime" required>
+      </div>
+
+      <!-- FEEDING FIELDS -->
+      <div id="feedingFields">
+        <div>
+          <label for="volume">Volume</label>
+          <div class="unit-row">
+            <input type="number" id="volume" placeholder="e.g. 120" min="0" step="0.5">
+            <div class="unit-btns">
+              <button type="button" class="unit-btn" data-unit="oz">oz</button>
+              <button type="button" class="unit-btn active" data-unit="ml">ml</button>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div style="margin-top: 14px;">
-        <label for="method">Feeding method</label>
-        <div class="method-btns" id="methodBtns">
-          <button type="button" class="method-btn active" data-method="Breast">Breast</button>
-          <button type="button" class="method-btn" data-method="Bottle - Milk">Bottle (milk)</button>
-          <button type="button" class="method-btn" data-method="Bottle - Formula">Bottle (formula)</button>
+        <div style="margin-top: 14px;">
+          <label for="method">Feeding method</label>
+          <div class="method-btns" id="methodBtns">
+            <button type="button" class="method-btn active" data-method="Breast">Breast</button>
+            <button type="button" class="method-btn" data-method="Bottle - Milk">Bottle (milk)</button>
+            <button type="button" class="method-btn" data-method="Bottle - Formula">Bottle (formula)</button>
+          </div>
+        </div>
+
+        <div id="sideContainer" style="margin-top: 14px;">
+          <label>Side</label>
+          <div class="sub-btns" id="sideBtns">
+            <button type="button" class="sub-btn active" data-side="Left">Left</button>
+            <button type="button" class="sub-btn" data-side="Right">Right</button>
+            <button type="button" class="sub-btn" data-side="Both">Both</button>
+          </div>
+        </div>
+
+        <div style="margin-top: 14px;">
+          <label for="duration">Time spent feeding (minutes)</label>
+          <input type="number" id="duration" placeholder="e.g. 20 (optional)" min="0" step="1">
         </div>
       </div>
 
-      <div id="sideContainer" style="margin-top: 14px;">
-        <label>Side</label>
-        <div class="sub-btns" id="sideBtns">
-          <button type="button" class="sub-btn active" data-side="Left">Left</button>
-          <button type="button" class="sub-btn" data-side="Right">Right</button>
-          <button type="button" class="sub-btn" data-side="Both">Both</button>
+      <!-- POOP FIELDS -->
+      <div id="poopFields" class="hidden">
+        <div>
+          <label for="poopDetails">Poop Consistency</label>
+          <select id="poopDetails">
+            <option value="Normal">Normal</option>
+            <option value="Runny">Runny</option>
+            <option value="Hard">Hard</option>
+            <option value="Sticky">Sticky</option>
+          </select>
+        </div>
+        <div style="margin-top: 14px;">
+          <label for="poopColor">Poop Color</label>
+          <select id="poopColor">
+            <option value="Dark Green">Dark Green</option>
+            <option value="Light Yellow">Light Yellow</option>
+            <option value="Brown">Brown</option>
+            <option value="Dark Brown">Dark Brown</option>
+            <option value="Black">Black</option>
+          </select>
         </div>
       </div>
 
-      <div style="margin-top: 14px;">
-        <label for="duration">Time spent feeding (minutes)</label>
-        <input type="number" id="duration" placeholder="e.g. 20 (optional)" min="0" step="1">
+      <!-- PEE FIELDS -->
+      <div id="peeFields" class="hidden">
+        <div style="font-size: 14px; color: #5A544B; padding: 4px 0;">
+          💧 Wet diaper logged
+        </div>
       </div>
+
+      <div class="form-actions">
+        <button type="button" class="cancel-edit" id="cancelEditBtn">Cancel</button>
+        <button type="submit" class="submit" id="submitBtn">Save log</button>
+      </div>
+      <div class="status" id="status"></div>
+    </form>
+
+    <div class="log-header">
+      <h2>Recent logs</h2>
+      <span id="countLabel"></span>
     </div>
-
-    <!-- POOP FIELDS -->
-    <div id="poopFields" class="hidden">
-      <div>
-        <label for="poopDetails">Poop Consistency</label>
-        <select id="poopDetails">
-          <option value="Normal">Normal</option>
-          <option value="Runny">Runny</option>
-          <option value="Hard">Hard</option>
-          <option value="Sticky">Sticky</option>
-        </select>
-      </div>
-      <div style="margin-top: 14px;">
-        <label for="poopColor">Poop Color</label>
-        <select id="poopColor">
-          <option value="Dark Green">Dark Green</option>
-          <option value="Light Yellow">Light Yellow</option>
-          <option value="Brown">Brown</option>
-          <option value="Dark Brown">Dark Brown</option>
-          <option value="Black">Black</option>
-        </select>
-      </div>
-    </div>
-
-    <!-- PEE FIELDS -->
-    <div id="peeFields" class="hidden">
-      <div style="font-size: 14px; color: #5A544B; padding: 4px 0;">
-        💧 Wet diaper logged
-      </div>
-    </div>
-
-    <button type="submit" class="submit">Save log</button>
-    <div class="status" id="status"></div>
-  </form>
-
-  <div class="log-header">
-    <h2>Recent logs</h2>
-    <span id="countLabel"></span>
+    <div id="log"></div>
   </div>
-  <div id="log"></div>
+
+  <div id="summaryView" class="view">
+    <div class="log-header" style="margin-top: 4px;">
+      <h2>Daily summary</h2>
+      <span id="summaryCountLabel"></span>
+    </div>
+    <div id="summary"></div>
+  </div>
 </div>
 
 <script>
 const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyRUWvpVZOZppMdza_JDahvGI6swgo0nv-ilVPvmKOWVE-bwu7qc267Juq86Sn9xqI/exec';
+const OZ_TO_ML = 29.5735;
 
 let logType = 'Milk Feeding';
 let unit = 'ml';
 let method = 'Breast';
 let side = 'Left';
 let entries = [];
+let editingId = null;
 
 const feedTimeInput = document.getElementById('feedTime');
 const volumeInput = document.getElementById('volume');
@@ -312,13 +452,29 @@ const poopDetailsInput = document.getElementById('poopDetails');
 const poopColorInput = document.getElementById('poopColor');
 const form = document.getElementById('feedForm');
 const logEl = document.getElementById('log');
+const summaryEl = document.getElementById('summary');
 const statusEl = document.getElementById('status');
 const countLabel = document.getElementById('countLabel');
+const summaryCountLabel = document.getElementById('summaryCountLabel');
+const submitBtn = document.getElementById('submitBtn');
+const cancelEditBtn = document.getElementById('cancelEditBtn');
+const editingBanner = document.getElementById('editingBanner');
 
 const feedingFields = document.getElementById('feedingFields');
 const poopFields = document.getElementById('poopFields');
 const peeFields = document.getElementById('peeFields');
 const sideContainer = document.getElementById('sideContainer');
+
+/* ---------- Tabs ---------- */
+document.getElementById('tabs').addEventListener('click', (e) => {
+  const btn = e.target.closest('.tab-btn');
+  if (!btn) return;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById(btn.dataset.view).classList.add('active');
+  if (btn.dataset.view === 'summaryView') renderSummary();
+});
 
 function setDefaultTime() {
   const now = new Date();
@@ -334,6 +490,12 @@ function setupButtonGroup(containerId, callback) {
     document.querySelectorAll(`#${containerId} button`).forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     callback(btn);
+  });
+}
+
+function setActiveInGroup(containerId, matchAttr, value) {
+  document.querySelectorAll(`#${containerId} button`).forEach(b => {
+    b.classList.toggle('active', b.dataset[matchAttr] === value);
   });
 }
 
@@ -377,7 +539,7 @@ function render() {
   }
   countLabel.textContent = entries.length + ' logged';
   const sorted = [...entries].sort((a,b) => new Date(b.time) - new Date(a.time));
-  
+
   logEl.innerHTML = sorted.map(e => {
     const { time, date } = formatEntryTime(e.time);
     let detailsHtml = '';
@@ -402,38 +564,178 @@ function render() {
         <div style="font-size:12px; font-weight:600; color:var(--clay); margin-top:1px;">${e.logType}</div>
         ${detailsHtml}
       </div>
-      <div style="display:flex; align-items:center;">
+      <div class="actions">
         <div class="vol">${mainDisplay}</div>
-        <button class="del" data-id="${e.id}">&times;</button>
+        <button class="edit" data-id="${e.id}" title="Edit">✏️</button>
+        <button class="del" data-id="${e.id}" title="Delete">&times;</button>
       </div>
     </div>`;
   }).join('');
 }
 
-logEl.addEventListener('click', async (e) => {
-  if (!e.target.classList.contains('del')) return;
-  const id = e.target.dataset.id;
-  entries = entries.filter(item => item.id !== id);
-  await saveEntries();
-  render();
+function dayKey(iso) {
+  return new Date(iso).toLocaleDateString('en-CA'); // YYYY-MM-DD, local time
+}
+
+function dayLabel(key) {
+  const d = new Date(key + 'T00:00:00');
+  return d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+function renderSummary() {
+  if (!entries.length) {
+    summaryEl.innerHTML = '<div class="empty">No logs recorded yet</div>';
+    summaryCountLabel.textContent = '';
+    return;
+  }
+
+  const byDay = {};
+  entries.forEach(e => {
+    const key = dayKey(e.time);
+    if (!byDay[key]) byDay[key] = { feeds: 0, volumeMl: 0, poops: 0, pees: 0 };
+    if (e.logType === 'Milk Feeding') {
+      byDay[key].feeds += 1;
+      const raw = parseFloat(e.volume);
+      if (!isNaN(raw)) {
+        byDay[key].volumeMl += (e.unit === 'oz') ? raw * OZ_TO_ML : raw;
+      }
+    } else if (e.logType === 'Poop') {
+      byDay[key].poops += 1;
+    } else if (e.logType === 'Pee') {
+      byDay[key].pees += 1;
+    }
+  });
+
+  const todayKey = new Date().toLocaleDateString('en-CA');
+  const sortedKeys = Object.keys(byDay).sort((a, b) => b.localeCompare(a));
+  summaryCountLabel.textContent = sortedKeys.length + ' day' + (sortedKeys.length === 1 ? '' : 's');
+
+  summaryEl.innerHTML = sortedKeys.map(key => {
+    const d = byDay[key];
+    const isToday = key === todayKey;
+    const ml = Math.round(d.volumeMl);
+    const oz = (d.volumeMl / OZ_TO_ML).toFixed(1);
+    return `<div class="day-card ${isToday ? 'today' : ''}">
+      <div class="day-title">
+        <h3>${dayLabel(key)}</h3>
+        ${isToday ? '<span class="today-tag">TODAY</span>' : ''}
+      </div>
+      <div class="stat-grid">
+        <div class="stat-tile feeds">
+          <div class="stat-value">${d.feeds}</div>
+          <div class="stat-label">Feedings</div>
+        </div>
+        <div class="stat-tile feeds">
+          <div class="stat-value">${ml} ml</div>
+          <div class="stat-label">Total volume (~${oz} oz)</div>
+        </div>
+        <div class="stat-tile poop">
+          <div class="stat-value">${d.poops}</div>
+          <div class="stat-label">💩 Poops</div>
+        </div>
+        <div class="stat-tile pee">
+          <div class="stat-value">${d.pees}</div>
+          <div class="stat-label">💧 Pees</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ---------- Edit / delete ---------- */
+function populateFormFromEntry(e) {
+  document.querySelectorAll('#typeBtns button').forEach(b => b.classList.toggle('active', b.dataset.type === e.logType));
+  logType = e.logType;
+  feedingFields.classList.toggle('hidden', logType !== 'Milk Feeding');
+  poopFields.classList.toggle('hidden', logType !== 'Poop');
+  peeFields.classList.toggle('hidden', logType !== 'Pee');
+
+  feedTimeInput.value = e.time;
+
+  if (e.logType === 'Milk Feeding') {
+    volumeInput.value = e.volume || '';
+    unit = e.unit || 'ml';
+    document.querySelectorAll('.unit-btn').forEach(b => b.classList.toggle('active', b.dataset.unit === unit));
+
+    method = e.method || 'Breast';
+    setActiveInGroup('methodBtns', 'method', method);
+    sideContainer.classList.toggle('hidden', method !== 'Breast');
+
+    side = e.side || 'Left';
+    setActiveInGroup('sideBtns', 'side', side);
+
+    durationInput.value = e.duration || '';
+  } else if (e.logType === 'Poop') {
+    poopDetailsInput.value = e.poopDetails || 'Normal';
+    poopColorInput.value = e.poopColor || 'Brown';
+  }
+}
+
+function startEdit(id) {
+  const entry = entries.find(item => item.id === id);
+  if (!entry) return;
+  editingId = id;
+  populateFormFromEntry(entry);
+  submitBtn.textContent = 'Update log';
+  cancelEditBtn.style.display = 'block';
+  editingBanner.style.display = 'block';
+  document.querySelector('.tab-btn[data-view="logView"]').click();
+  form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function stopEdit() {
+  editingId = null;
+  submitBtn.textContent = 'Save log';
+  cancelEditBtn.style.display = 'none';
+  editingBanner.style.display = 'none';
+}
+
+cancelEditBtn.addEventListener('click', () => {
+  stopEdit();
+  form.reset();
+  document.querySelector('#typeBtns button[data-type="Milk Feeding"]').click();
+  document.querySelector('.unit-btn[data-unit="ml"]').click();
+  document.querySelector('#methodBtns button[data-method="Breast"]').click();
+  document.querySelector('#sideBtns button[data-side="Left"]').click();
+  setDefaultTime();
 });
 
+logEl.addEventListener('click', async (e) => {
+  const editBtn = e.target.closest('.edit');
+  const delBtn = e.target.closest('.del');
+
+  if (editBtn) {
+    startEdit(editBtn.dataset.id);
+    return;
+  }
+
+  if (delBtn) {
+    const id = delBtn.dataset.id;
+    entries = entries.filter(item => item.id !== id);
+    if (editingId === id) stopEdit();
+    await saveEntries();
+    await syncToGoogleSheets({ id }, 'delete');
+    render();
+  }
+});
+
+/* ---------- Load / save ---------- */
 async function loadEntries() {
   try {
     statusEl.textContent = 'Syncing from sheet...';
     const response = await fetch(GOOGLE_SCRIPT_URL);
     const sheetData = await response.json();
-    
+
     if (Array.isArray(sheetData) && sheetData.length > 0) {
       entries = sheetData;
     } else {
-      const result = await window.storage.get('feeding-entries', false);
-      entries = result ? JSON.parse(result.value) : [];
+      const cached = localStorage.getItem('feeding-entries');
+      entries = cached ? JSON.parse(cached) : [];
     }
   } catch (e) {
     try {
-      const result = await window.storage.get('feeding-entries', false);
-      entries = result ? JSON.parse(result.value) : [];
+      const cached = localStorage.getItem('feeding-entries');
+      entries = cached ? JSON.parse(cached) : [];
     } catch (err) {
       entries = [];
     }
@@ -444,20 +746,20 @@ async function loadEntries() {
 
 async function saveEntries() {
   try {
-    await window.storage.set('feeding-entries', JSON.stringify(entries), false);
+    localStorage.setItem('feeding-entries', JSON.stringify(entries));
   } catch (e) {
     statusEl.textContent = 'Could not save locally — try again';
   }
 }
 
-async function syncToGoogleSheets(entry) {
+async function syncToGoogleSheets(entry, action) {
   if (!GOOGLE_SCRIPT_URL) return;
   try {
     await fetch(GOOGLE_SCRIPT_URL, {
       method: 'POST',
       mode: 'no-cors',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(entry)
+      body: JSON.stringify(Object.assign({ action: action || 'add' }, entry))
     });
   } catch (e) {
     console.error('Failed to sync to Google Sheets', e);
@@ -466,9 +768,11 @@ async function syncToGoogleSheets(entry) {
 
 form.addEventListener('submit', async (ev) => {
   ev.preventDefault();
-  
+
+  const isEdit = !!editingId;
+
   const entry = {
-    id: 'entry-' + Date.now(),
+    id: isEdit ? editingId : ('entry-' + Date.now()),
     logType: logType,
     time: feedTimeInput.value,
     volume: logType === 'Milk Feeding' ? volumeInput.value : '',
@@ -480,17 +784,26 @@ form.addEventListener('submit', async (ev) => {
     poopColor: logType === 'Poop' ? poopColorInput.value : ''
   };
 
-  entries.push(entry);
+  if (isEdit) {
+    const idx = entries.findIndex(item => item.id === editingId);
+    if (idx > -1) entries[idx] = entry;
+    else entries.push(entry);
+  } else {
+    entries.push(entry);
+  }
+
   statusEl.textContent = 'Saving...';
-  
+
   await Promise.all([
     saveEntries(),
-    syncToGoogleSheets(entry)
+    syncToGoogleSheets(entry, isEdit ? 'edit' : 'add')
   ]);
 
-  statusEl.textContent = 'Saved & Synced';
+  statusEl.textContent = isEdit ? 'Updated & Synced' : 'Saved & Synced';
   setTimeout(() => statusEl.textContent = '', 1200);
-  
+
+  if (isEdit) stopEdit();
+
   if (logType === 'Milk Feeding') {
     volumeInput.value = '';
     durationInput.value = '';
