@@ -420,7 +420,10 @@
 
     <div class="log-header">
       <h2>Recent logs</h2>
-      <span id="countLabel"></span>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span id="countLabel"></span>
+        <button type="button" id="refreshBtn" title="Refresh from sheet" style="background:none; border:none; color:var(--clay-deep); font-size:13px; font-weight:700; cursor:pointer; padding:0;">⟳ Refresh</button>
+      </div>
     </div>
     <div id="log"></div>
   </div>
@@ -723,7 +726,10 @@ logEl.addEventListener('click', async (e) => {
 async function loadEntries() {
   try {
     statusEl.textContent = 'Syncing from sheet...';
-    const response = await fetch(GOOGLE_SCRIPT_URL);
+    // Cache-bust: browsers (especially iOS home-screen apps) aggressively
+    // cache plain GET requests, so force a fresh network hit every time.
+    const bustedUrl = GOOGLE_SCRIPT_URL + (GOOGLE_SCRIPT_URL.includes('?') ? '&' : '?') + 't=' + Date.now();
+    const response = await fetch(bustedUrl, { cache: 'no-store' });
     const sheetData = await response.json();
 
     if (Array.isArray(sheetData) && sheetData.length > 0) {
@@ -810,6 +816,22 @@ form.addEventListener('submit', async (ev) => {
   }
   setDefaultTime();
   render();
+});
+
+document.getElementById('refreshBtn').addEventListener('click', () => {
+  loadEntries().then(() => {
+    if (document.getElementById('summaryView').classList.contains('active')) renderSummary();
+  });
+});
+
+// iOS home-screen apps are often kept frozen in memory rather than reloaded,
+// so re-sync whenever the app comes back to the foreground.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    loadEntries().then(() => {
+      if (document.getElementById('summaryView').classList.contains('active')) renderSummary();
+    });
+  }
 });
 
 loadEntries();
